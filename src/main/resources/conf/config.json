@@ -1,0 +1,11 @@
+{
+  "port" : 3306,
+  "host": "192.168.3.66",
+  "database": "vertx",
+  "username": "root",
+  "password": "rootFwtai",
+  "charset": "utf8mb4",
+  "ssl": false,
+  "maxSize": 32,
+  "appPort" : 8801
+}
