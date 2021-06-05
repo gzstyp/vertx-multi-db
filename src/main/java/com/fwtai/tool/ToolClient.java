@@ -152,7 +152,13 @@ public final class ToolClient{
     return null;
   }
 
-  /**验证请求参数是否完整,先调用 getParams() 再调用本方法*/
+  /**验证请求参数是否完整,先调用 getParams() 再调用本方法
+   final String validateField = ToolClient.validateField(params,"deviceFlag","volume");
+   if(validateField != null){
+     ToolClient.responseJson(context,validateField);
+     return;
+   }
+  */
   public static String validateField(final HashMap<String,String> params,final String... fields){
     boolean bl = false;
     if(params == null || params.isEmpty()) return jsonParams();
