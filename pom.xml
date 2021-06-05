@@ -18,10 +18,9 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
-    <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
+    <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
     <vertx.version>4.1.0</vertx.version>
     <junit-jupiter.version>5.7.2</junit-jupiter.version>
-    <!--启动类-->
     <main.verticle>com.fwtai.Launcher</main.verticle>
   </properties>
 
@@ -44,16 +43,15 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-mysql-client</artifactId>
+      <artifactId>vertx-config</artifactId>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-jdbc-client</artifactId>
     </dependency>
-    <!--读取配置文件config.json-->
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-config</artifactId>
+      <artifactId>vertx-mysql-client</artifactId>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -73,7 +71,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <plugin>
@@ -83,6 +80,21 @@
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>${maven-shade-plugin.version}</version>
+        <configuration>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>module-info.class</exclude>
+                <exclude>META-INF/*.SF</exclude>
+                <exclude>META-INF/*.DSA</exclude>
+                <exclude>META-INF/*.RSA</exclude>
+                <exclude>META-INF/*.MF</exclude>
+                <exclude>META-INF/**</exclude>
+              </excludes>
+            </filter>
+          </filters>
+        </configuration>
         <executions>
           <execution>
             <phase>package</phase>
@@ -98,28 +110,10 @@
                     <Main-Verticle>${main.verticle}</Main-Verticle>
                   </manifestEntries>
                 </transformer>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                  <resource>META-INF/services/io.vertx.core.spi.VerticleFactory</resource>
-                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
-              <artifactSet>
-              </artifactSet>
               <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar
               </outputFile>
-              <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
-              <createDependencyReducedPom>true</createDependencyReducedPom>
-              <!--过滤排除-->
-              <filters>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/*.SF</exclude>
-                    <!--<exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>-->
-                  </excludes>
-                </filter>
-              </filters>
             </configuration>
           </execution>
         </executions>
@@ -129,7 +123,6 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>${exec-maven-plugin.version}</version>
         <configuration>
-          <!--开发阶段,把这个添加配置到Application的Main class,然后把下面的 ${main.verticle} 的值配置到 Program agruments,前面指定run参数,后面跟着启动类,即 run com.fwtai.Launcher -->
           <mainClass>io.vertx.core.Launcher</mainClass>
           <arguments>
             <argument>run</argument>

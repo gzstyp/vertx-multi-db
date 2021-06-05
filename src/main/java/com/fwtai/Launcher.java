@@ -11,9 +11,8 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,10 +48,14 @@ public class Launcher extends AbstractVerticle {
     });
 
     //第四步,配置Router解析url
-    // http://127.0.0.1:8801/push/v1.0/add?deviceFlag=330602&volume=52.60
+    // http://127.0.0.1:808/push/v1.0/add?deviceFlag=330602&volume=52.60
     router.get("/push/v1.0/add").handler((context) -> {
       final HashMap<String,String> params = ToolClient.getParams(context);
-      ToolClient.validateField(params,"deviceFlag","volume");
+      final String validateField = ToolClient.validateField(params,"deviceFlag","volume");
+      if(validateField != null){
+        ToolClient.responseJson(context,validateField);
+        return;
+      }
       final HttpServerRequest request = context.request();
       final String deviceFlag = request.getParam("deviceFlag");
       final String volume = request.getParam("volume");
@@ -87,7 +90,7 @@ public class Launcher extends AbstractVerticle {
     }).failureHandler(context -> {
       ToolClient.responseJson(context,ToolClient.createJson(204,"操作失败,系统出现错误"));
     });
-    final int port = 8801;
+    final int port = 808;
     server.requestHandler(router).listen(port,http -> {
       if (http.succeeded()){
         startPromise.complete();
@@ -96,5 +99,9 @@ public class Launcher extends AbstractVerticle {
         logger.error("Launcher应用启动失败,"+http.cause());
       }
     });
+  }
+
+  protected void redirect(final RoutingContext context){
+    context.response().setStatusCode(302).putHeader("Location","http://www.dwz.cloud").end();
   }
 }
