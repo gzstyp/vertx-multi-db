@@ -34,7 +34,7 @@ public final class DBWrite{
     client = MySQLPool.pool(vertx,connectOptions,pool);
   }
 
-  public MySQLPool getClient(){
+  protected MySQLPool getClient(){
     return client;
   }
 }

@@ -35,7 +35,7 @@ public final class DBRead0{
     client = MySQLPool.pool(vertx,connectOptions,pool);
   }
 
-  public MySQLPool getClient(){
+  protected MySQLPool getClient(){
     return client;
   }
 }
