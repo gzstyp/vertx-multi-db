@@ -79,7 +79,7 @@ public final class DaoHandle{
     });
   }
 
-  //带分页查询操作,功能待验证,https://vertx-china.gitee.io/docs/vertx-mysql-client/java/
+  //带分页查询操作[需要在同一连接上执行多个操作时],功能待验证,https://vertx-china.gitee.io/docs/vertx-mysql-client/java/
   public final void queryListTotal(final RoutingContext context,final String sqlListData,final List<Object> paramsListData,final String sqTotal,final List<Object> paramsTotal){
     //从连接池获得连接
     this.getQuery().getConnection().compose(sqlConnection -> {
