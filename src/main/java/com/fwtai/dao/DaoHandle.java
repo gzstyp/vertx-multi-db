@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+//todo 事务: https://vertx-china.gitee.io/docs/vertx-mysql-client/java/#_using_transactions
 public final class DaoHandle{
 
   final InternalLogger logger = Log4JLoggerFactory.getInstance(getClass());
