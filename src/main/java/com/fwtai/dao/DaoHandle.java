@@ -37,7 +37,7 @@ public final class DaoHandle{
     this.dbWrite = new DBWrite(vertx);
   }
 
-  public MySQLPool getPool(){
+  public MySQLPool getQuery(){
     final int total = count.getAndAdd(1);
     final int key = total % dbTotal;
     if(key == 0){
@@ -49,7 +49,7 @@ public final class DaoHandle{
 
   //todo 推荐,有参数 new ToolMySQL(vertx).queryList();若没有参数的话,要创建 new ArrayList<Object>(0) 作为第3个参数
   public final void queryList(final RoutingContext context,final String sql,final List<Object> params){
-    this.getPool().getConnection((result) ->{
+    this.getQuery().getConnection((result) ->{
       if(result.succeeded()){
         final SqlConnection conn = result.result();
         conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
@@ -79,9 +79,40 @@ public final class DaoHandle{
     });
   }
 
+  //带分页查询操作,功能待验证,https://vertx-china.gitee.io/docs/vertx-mysql-client/java/
+  public final void queryListTotal(final RoutingContext context,final String sqlListData,final List<Object> paramsListData,final String sqTotal,final List<Object> paramsTotal){
+    //从连接池获得连接
+    this.getQuery().getConnection().compose(sqlConnection -> {
+      // 所有操作都在同一连接上执行
+      return sqlConnection.preparedQuery(sqlListData).execute(Tuple.wrap(paramsListData))
+        .compose(res -> sqlConnection.preparedQuery(sqTotal).execute(Tuple.wrap(paramsTotal))).onComplete(handler->{
+          // 释放连接池的连接
+        sqlConnection.close();}).onComplete(handler->{
+        if (handler.succeeded()){
+          System.out.println("查询完成");
+          final ArrayList<JsonObject> list = new ArrayList<>();
+          final RowSet<Row> rowSet = handler.result();
+          final List<String> columns = rowSet.columnsNames();
+          rowSet.forEach((item) ->{
+            final JsonObject jsonObject = new JsonObject();
+            for(int i = 0; i < columns.size(); i++){
+              final String column = columns.get(i);
+              jsonObject.put(column,item.getValue(column));
+            }
+            list.add(jsonObject);
+          });
+          //操作数据库成功
+          ToolClient.responseJson(context,ToolClient.queryJson(list));
+        } else {
+          logger.error("queryListTotal()出现异常,报错信息:" + handler.cause().getMessage());
+        }
+      });
+    });
+  }
+
   //todo 推荐,有参数 new ToolMySQL(vertx).queryList();若没有参数的话,要创建 new ArrayList<Object>(0) 作为第3个参数
   public final void queryMap(final RoutingContext context,final String sql,final List<Object> params){
-    this.getPool().getConnection((result) ->{
+    this.getQuery().getConnection((result) ->{
       if(result.succeeded()){
         final SqlConnection conn = result.result();
         conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
@@ -108,7 +139,7 @@ public final class DaoHandle{
   }
 
   public final void queryMap(final String sql,final List<Object> params,final QueryResultMap queryResultMap){
-    this.getPool().getConnection((result) ->{
+    this.getQuery().getConnection((result) ->{
       if(result.succeeded()){
         final SqlConnection conn = result.result();
         conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
