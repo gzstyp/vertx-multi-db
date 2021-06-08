@@ -16,6 +16,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * 异步处理方式;区别在于 router.get("/sync").handler 和 router.get("/async").blockingHandler,即异步是 handler;同步阻塞是 blockingHandler
@@ -45,6 +46,45 @@ public class Launcher extends AbstractVerticle {
 
     router.get("/").handler(context->{
       ToolClient.responseJson(context,ToolClient.createJson(200,"欢迎访问本服务平台"));
+    });
+
+    // http://127.0.0.1:808/queryList
+    router.get("/queryList").handler(context->{
+      final String sqlListData = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1,5";
+      final List<Object> paramsListData = new ArrayList<>(0);
+      final String sqlTotal = "SELECT COUNT(kid) total from sys_user LIMIT 1";
+      final List<Object> paramsTotal = new ArrayList<>(0);
+      daoHandle.queryList(context,sqlListData,paramsListData);
+    });
+
+    // http://127.0.0.1:808/queryList1
+    router.get("/queryList1").handler(context->{
+      final String sql = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1,5";
+      daoHandle.queryList(sql,new ArrayList<Object>(0)).onSuccess(list->{
+        ToolClient.responseJson(context,ToolClient.queryJson(list));
+      }).onFailure(err->{
+        logger.error("queryList1异常,"+err.getMessage());
+        ToolClient.responseJson(context,ToolClient.createJson(199,"连接数据库失败"));
+      });
+    });
+
+    // http://127.0.0.1:808/queryMap1
+    router.get("/queryMap1").handler(context->{
+      //final String sql = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1";
+      final String sql = "SELECT COUNT(kid) total from sys_user LIMIT 1";
+      daoHandle.queryMap(sql,new ArrayList<Object>(0)).onSuccess(map->{
+        ToolClient.responseJson(context,ToolClient.queryJson(map));
+      }).onFailure(err->{
+        logger.error("queryMap1异常,"+err.getMessage());
+        ToolClient.responseJson(context,ToolClient.createJson(199,"连接数据库失败"));
+      });
+    });
+
+    // http://127.0.0.1:808/queryMap2
+    router.get("/queryMap2").handler(context->{
+      //final String sql = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1";
+      final String sql = "SELECT COUNT(kid) total from sys_user LIMIT 1";
+      daoHandle.queryMap(context,sql,new ArrayList<>(0));
     });
 
     //第四步,配置Router解析url

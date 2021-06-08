@@ -48,7 +48,7 @@ public final class DaoHandle{
     }
   }
 
-  //todo 推荐,有参数 new ToolMySQL(vertx).queryList();若没有参数的话,要创建 new ArrayList<Object>(0) 作为第3个参数
+  //todo 推荐,daoHandle.queryList(context,sql,new ArrayList<Object>(0));若没有参数的话,要创建 new ArrayList<Object>(0) 作为第3个参数
   public final void queryList(final RoutingContext context,final String sql,final List<Object> params){
     this.getQuery().getConnection((result) ->{
       if(result.succeeded()){
@@ -56,18 +56,7 @@ public final class DaoHandle{
         conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
           conn.close();//推荐写在第1行,防止忘记释放资源
           if(rows.succeeded()){
-            final ArrayList<JsonObject> list = new ArrayList<>();
-            final RowSet<Row> rowSet = rows.result();
-            final List<String> columns = rowSet.columnsNames();
-            rowSet.forEach((item) ->{
-              final JsonObject jsonObject = new JsonObject();
-              for(int i = 0; i < columns.size(); i++){
-                final String column = columns.get(i);
-                jsonObject.put(column,item.getValue(column));
-              }
-              list.add(jsonObject);
-            });
-            //操作数据库成功
+            final ArrayList<JsonObject> list = getRowList(rows.result());
             ToolClient.responseJson(context,ToolClient.queryJson(list));
           }else{
             logger.error("queryList()出现异常,连接数据库失败:"+sql);
@@ -80,35 +69,57 @@ public final class DaoHandle{
     });
   }
 
-  //带分页查询操作[需要在同一连接上执行多个操作时],功能待验证,https://vertx-china.gitee.io/docs/vertx-mysql-client/java/
-  public final void queryListTotal(final RoutingContext context,final String sqlListData,final List<Object> paramsListData,final String sqTotal,final List<Object> paramsTotal){
-    //从连接池获得连接
-    this.getQuery().getConnection().compose(sqlConnection -> {
-      // 所有操作都在同一连接上执行
-      return sqlConnection.preparedQuery(sqlListData).execute(Tuple.wrap(paramsListData))
-        .compose(res -> sqlConnection.preparedQuery(sqTotal).execute(Tuple.wrap(paramsTotal))).onComplete(handler->{
-          // 释放连接池的连接
-        sqlConnection.close();}).onComplete(handler->{
-        if (handler.succeeded()){
-          System.out.println("查询完成");
-          final ArrayList<JsonObject> list = new ArrayList<>();
-          final RowSet<Row> rowSet = handler.result();
-          final List<String> columns = rowSet.columnsNames();
-          rowSet.forEach((item) ->{
-            final JsonObject jsonObject = new JsonObject();
-            for(int i = 0; i < columns.size(); i++){
-              final String column = columns.get(i);
-              jsonObject.put(column,item.getValue(column));
-            }
-            list.add(jsonObject);
-          });
-          //操作数据库成功
-          ToolClient.responseJson(context,ToolClient.queryJson(list));
-        } else {
-          logger.error("queryListTotal()出现异常,报错信息:" + handler.cause().getMessage());
-        }
-      });
+  //推荐 daoHandle.queryList(sql,new ArrayList<>(0)).onSuccess(list->{}).onFailure(err->{});若有参数的话,要创建 new ArrayList<Object>(0)即可
+  public final Future<ArrayList<JsonObject>> queryList(final String sql,final List<Object> params){
+    final Promise<ArrayList<JsonObject>> promise = Promise.promise();
+    this.getQuery().getConnection((result) ->{
+      if(result.succeeded()){
+        final SqlConnection conn = result.result();
+        conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
+          conn.close();//推荐写在第1行,防止忘记释放资源
+          if(rows.succeeded()){
+            promise.complete(getRowList(rows.result()));
+          }else{
+            promise.fail(rows.cause());
+          }
+        });
+      }
     });
+    return promise.future();
+  }
+
+  //推荐 daoHandle.queryMap(sql,new ArrayList<>(0)).onSuccess(map->{}).onFailure(err->{});若有参数的话,要创建 new ArrayList<Object>(0)即可
+  public final Future<JsonObject> queryMap(final String sql,final List<Object> params){
+    final Promise<JsonObject> promise = Promise.promise();
+    this.getQuery().getConnection((result) ->{
+      if(result.succeeded()){
+        final SqlConnection conn = result.result();
+        conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
+          conn.close();//推荐写在第1行,防止忘记释放资源
+          if(rows.succeeded()){
+            final JsonObject jsonObject = getRowMap(rows.result());
+            promise.complete(jsonObject);
+          }else{
+            promise.fail(rows.cause());
+          }
+        });
+      }
+    });
+    return promise.future();
+  }
+
+  protected final ArrayList<JsonObject> getRowList(final RowSet<Row> rowSet){
+    final ArrayList<JsonObject> list = new ArrayList<>();
+    final List<String> columns = rowSet.columnsNames();
+    rowSet.forEach((item) ->{
+      final JsonObject jsonObject = new JsonObject();
+      for(int i = 0; i < columns.size(); i++){
+        final String column = columns.get(i);
+        jsonObject.put(column,item.getValue(column));
+      }
+      list.add(jsonObject);
+    });
+    return list;
   }
 
   //todo 推荐,有参数 new ToolMySQL(vertx).queryList();若没有参数的话,要创建 new ArrayList<Object>(0) 作为第3个参数
@@ -119,15 +130,7 @@ public final class DaoHandle{
         conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
           conn.close();//推荐写在第1行,防止忘记释放资源
           if(rows.succeeded()){
-            final JsonObject jsonObject = new JsonObject();
-            final RowSet<Row> rowSet = rows.result();
-            final List<String> columns = rowSet.columnsNames();
-            rowSet.forEach((item) ->{
-              for(int i = 0; i < columns.size();i++){
-                final String column = columns.get(i);
-                jsonObject.put(column,item.getValue(column));
-              }
-            });
+            final JsonObject jsonObject = getRowMap(rows.result());
             ToolClient.responseJson(context,ToolClient.queryJson(jsonObject));
           }else{
             logger.error("queryMap()出现异常,连接数据库失败:"+sql);
@@ -139,6 +142,18 @@ public final class DaoHandle{
     });
   }
 
+  protected final JsonObject getRowMap(final RowSet<Row> rowSet){
+    final JsonObject jsonObject = new JsonObject();
+    final List<String> columns = rowSet.columnsNames();
+    rowSet.forEach((item) ->{
+      for(int i = 0; i < columns.size();i++){
+        final String column = columns.get(i);
+        jsonObject.put(column,item.getValue(column));
+      }
+    });
+    return jsonObject;
+  }
+
   public final void queryMap(final String sql,final List<Object> params,final QueryResultMap queryResultMap){
     this.getQuery().getConnection((result) ->{
       if(result.succeeded()){
@@ -146,16 +161,7 @@ public final class DaoHandle{
         conn.preparedQuery(sql).execute(Tuple.wrap(params),rows ->{
           conn.close();//推荐写在第1行,防止忘记释放资源
           if(rows.succeeded()){
-            final JsonObject jsonObject = new JsonObject();
-            final RowSet<Row> rowSet = rows.result();
-            final List<String> columns = rowSet.columnsNames();
-            rowSet.forEach((item) ->{
-              for(int i = 0; i < columns.size();i++){
-                final String column = columns.get(i);
-                jsonObject.put(column,item.getValue(column));
-              }
-            });
-            queryResultMap.succeed(jsonObject);
+            queryResultMap.succeed(getRowMap(rows.result()));
           }else{
             queryResultMap.failure(rows.cause());
           }
