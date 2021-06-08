@@ -177,15 +177,16 @@ public final class ToolClient{
   }
 
   /**获取表单请求参数*/
-  public static HashMap<String,String> getParams(final RoutingContext context){
+  public static HashMap<String,String> getParams(final RoutingContext context,final String... formField){
     final HashMap<String,String> result = new HashMap<>();
-    final List<Map.Entry<String,String>> list = context.queryParams().entries();
-    for(int i = 0; i < list.size(); i++){
-      final Map.Entry<String,String> entry = list.get(i);
-      final String value = entry.getValue();
-      if(value != null && !value.isEmpty()){
-        result.put(entry.getKey(),entry.getValue());
-      }
+    final HttpServerRequest request = context.request();
+    for(int x = 0; x < formField.length;x++){
+      final String field = formField[x].trim();
+      if(field.length() == 1 && field.equals("_")) continue;
+      final String value = request.getParam(field);
+      if(value == null || value.trim().length() <= 0) continue;
+      if(value.length() == 1 && value.equals("_")) continue;
+      result.put(field,value);
     }
     return result;
   }

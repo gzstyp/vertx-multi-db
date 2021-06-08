@@ -227,4 +227,26 @@ public final class DaoHandle{
     });
     return promise.future();//重点,固定写法
   }
+
+  protected void getSql(final String table,final ArrayList<String> fields,final String where,final String order,final Integer limit){
+    final StringBuilder sb = new StringBuilder("select ");
+    for(int i = 0; i < fields.size(); i++){
+      final String field = fields.get(i);
+      if(sb.length() > 7){
+        sb.append(",").append(field);
+      }else{
+        sb.append(field);
+      }
+    }
+    sb.append(" from ").append(table);
+    if(where != null){
+      sb.append(" where ").append(where);
+    }
+    if(order != null){
+      sb.append(" order by ").append(order);
+    }
+    if(limit != null){
+      sb.append(" LIMIT ").append(limit);
+    }
+  }
 }

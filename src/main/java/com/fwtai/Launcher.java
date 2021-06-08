@@ -57,10 +57,23 @@ public class Launcher extends AbstractVerticle {
       daoHandle.queryList(context,sqlListData,paramsListData);
     });
 
-    // http://127.0.0.1:808/queryList1
+    // http://127.0.0.1:808/queryList1?username=t&section=1
     router.get("/queryList1").handler(context->{
-      final String sql = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1,5";
-      daoHandle.queryList(sql,new ArrayList<Object>(0)).onSuccess(list->{
+      final String username = context.request().getParam("username");
+      final String section = context.request().getParam("section");
+      final StringBuilder sql = new StringBuilder("SELECT kid,username,`password` from sys_user ");
+      final ArrayList<Object> objects = new ArrayList<>(0);
+      if(username != null && username.length() > 0){
+        sql.append("where username LIKE CONCAT('%',?,'%') ");
+        objects.add(username);
+      }
+      sql.append("ORDER BY username DESC ");
+      if(section != null && section.length() > 0){
+        sql.append("LIMIT ?,5");
+        objects.add(Integer.parseInt(section));
+      }
+      System.out.println(sql.toString());
+      daoHandle.queryList(sql.toString(),objects).onSuccess(list->{
         ToolClient.responseJson(context,ToolClient.queryJson(list));
       }).onFailure(err->{
         logger.error("queryList1异常,"+err.getMessage());
