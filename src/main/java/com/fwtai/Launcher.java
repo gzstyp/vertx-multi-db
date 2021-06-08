@@ -6,6 +6,8 @@ import com.fwtai.tool.ToolClient;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.Log4JLoggerFactory;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
@@ -52,8 +54,6 @@ public class Launcher extends AbstractVerticle {
     router.get("/queryList").handler(context->{
       final String sqlListData = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1,5";
       final List<Object> paramsListData = new ArrayList<>(0);
-      final String sqlTotal = "SELECT COUNT(kid) total from sys_user LIMIT 1";
-      final List<Object> paramsTotal = new ArrayList<>(0);
       daoHandle.queryList(context,sqlListData,paramsListData);
     });
 
@@ -85,6 +85,47 @@ public class Launcher extends AbstractVerticle {
       //final String sql = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1";
       final String sql = "SELECT COUNT(kid) total from sys_user LIMIT 1";
       daoHandle.queryMap(context,sql,new ArrayList<>(0));
+    });
+
+    // todo 分页 http://127.0.0.1:808/listDataTotal
+    router.get("/listDataTotal").handler(context->{
+      final String sqlListData = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1,5";
+      final List<Object> paramsListData = new ArrayList<>(0);
+      final String sqlTotal = "SELECT COUNT(kid) total from sys_user LIMIT 1";
+      final List<Object> paramsTotal = new ArrayList<>(0);
+      final Future<ArrayList<JsonObject>> listData = daoHandle.queryList(sqlListData,paramsListData);
+      final Future<JsonObject> total = daoHandle.queryMap(sqlTotal,paramsTotal);
+      final CompositeFuture all = CompositeFuture.all(total,listData);
+      all.onSuccess(handler->{
+        System.out.println("两个文件都写入成功");
+        System.out.println(handler.list());//包含全部数据
+        final int size = handler.size();
+        final List<Object> list = handler.list();
+        List<JsonObject> data = null;
+        Integer record = 0;
+        for(int i = 0; i < list.size(); i++){
+          final Object o = list.get(i);
+          if(o instanceof List){
+            System.out.println(o);
+            data = (List<JsonObject>) o;
+          }
+          if(o instanceof JsonObject){
+            System.out.println(o);
+            record = ((JsonObject)o).getInteger("total");
+          }
+        }
+        final String json = ToolClient.listPage(data,record);
+        ToolClient.responseJson(context,json);
+      }).onFailure(err->{
+        if(listData.failed()){
+          listData.cause().printStackTrace();
+        }
+        if(total.failed()){
+          total.cause().printStackTrace();
+        }
+        ToolClient.responseJson(context,ToolClient.createJson(199,"系统出现错误"));
+      });
+
     });
 
     //第四步,配置Router解析url

@@ -16,6 +16,8 @@ public final class ToolClient{
   private static final String key_data = "data";
   private static final String key_msg = "msg";
   private static final String key_code = "code";
+  private final static String key_total = "total";
+  private final static String record = "record";
 
   public static String createJson(final int code,final String msg){
     final JsonObject json = new JsonObject();
@@ -192,5 +194,21 @@ public final class ToolClient{
   public static String getIdsChar32(){
     final ThreadLocalRandom random = ThreadLocalRandom.current();
     return new UUID(random.nextInt(),random.nextInt()).toString().replaceAll("-","");
+  }
+
+  /**分页*/
+  public static String listPage(final List<JsonObject> listData,final Integer total){
+    final JsonObject json = new JsonObject();
+    if(listData == null || listData.size() == 0){
+      json.put(key_code,201);
+      json.put(key_msg,"暂无数据");
+    }else{
+      json.put(key_code,200);
+      json.put(key_msg,"操作成功");
+      json.put(key_data,listData);
+      json.put(record,listData.size());
+      json.put(key_total,total);
+    }
+    return json.encode();
   }
 }
