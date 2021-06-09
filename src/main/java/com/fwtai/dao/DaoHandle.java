@@ -18,8 +18,8 @@ import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.templates.SqlTemplate;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 //todo 事务: https://vertx-china.gitee.io/docs/vertx-mysql-client/java/#_using_transactions
@@ -254,13 +254,13 @@ public final class DaoHandle{
   }
 
   /**
-   * 查询操作,待验证,用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
+   * 基于SqlTemplate查询操作,待验证,用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
    * @param parameters --> SELECT name FROM users WHERE id=#{id}
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021/6/9 19:59
   */
-  public final Future<RowSet<Row>> query(final String sql,final HashMap<String,Object> parameters){
+  public final Future<RowSet<Row>> templateQuery(final String sql,final Map<String,Object> parameters){
     final Promise<RowSet<Row>> promise = Promise.promise();
     final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(parameters);
     execute.onSuccess(handler->{
@@ -272,13 +272,13 @@ public final class DaoHandle{
   }
 
   /**
-   * 新增|更新|删除,待验证
+   * 基于SqlTemplate新增|更新|删除,待验证
    * @param parameters --> INSERT INTO users VALUES (#{id},#{name})
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021/6/9 19:58
   */
-  public final Future<Integer> execute(final String sql,final HashMap<String,Object> parameters){
+  public final Future<Integer> templateExecute(final String sql,final Map<String,Object> parameters){
     final Promise<Integer> promise = Promise.promise();
     final Future<SqlResult<Void>> execute = SqlTemplate.forUpdate(this.dbWrite.getClient(),sql).execute(parameters);
     execute.onSuccess(handler->{
