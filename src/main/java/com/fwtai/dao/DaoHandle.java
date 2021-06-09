@@ -272,7 +272,7 @@ public final class DaoHandle{
   }
 
   /**
-   * 基于SqlTemplate新增|更新|删除,待验证
+   * todo 基于SqlTemplate新增|更新|删除,推荐!
    * @param parameters --> INSERT INTO users VALUES (#{id},#{name})
    * @作者 田应平
    * @QQ 444141300
