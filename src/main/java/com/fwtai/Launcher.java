@@ -187,7 +187,7 @@ public class Launcher extends AbstractVerticle {
     final int port = 808;
     server.requestHandler(router).listen(port,http -> {
       if (http.succeeded()){
-        startPromise.complete();
+        startPromise.complete();//todo 告知vert启动完毕
         logger.info("---应用启动成功---,http://127.0.0.1:"+port);
       } else {
         logger.error("Launcher应用启动失败,"+http.cause());
