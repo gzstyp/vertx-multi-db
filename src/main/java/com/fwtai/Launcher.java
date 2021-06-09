@@ -19,6 +19,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 异步处理方式;区别在于 router.get("/sync").handler 和 router.get("/async").blockingHandler,即异步是 handler;同步阻塞是 blockingHandler
@@ -57,12 +58,12 @@ public class Launcher extends AbstractVerticle {
       daoHandle.queryList(context,sqlListData,paramsListData);
     });
 
-    // http://127.0.0.1:808/queryList1?username=t&section=1
+    // http://127.0.0.1:808/queryList1?username=tz&section=1
     router.get("/queryList1").handler(context->{
       final String username = context.request().getParam("username");
       final String section = context.request().getParam("section");
       final StringBuilder sql = new StringBuilder("SELECT kid,username,`password` from sys_user ");
-      final ArrayList<Object> objects = new ArrayList<>(0);
+      final ArrayList<Object> objects = new ArrayList<>(2);
       if(username != null && username.length() > 0){
         sql.append("where username LIKE CONCAT('%',?,'%') ");
         objects.add(username);
@@ -98,6 +99,50 @@ public class Launcher extends AbstractVerticle {
       //final String sql = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1";
       final String sql = "SELECT COUNT(kid) total from sys_user LIMIT 1";
       daoHandle.queryMap(context,sql,new ArrayList<>(0));
+    });
+
+    // http://127.0.0.1:808/execute101?username=ad&password=21012
+    router.get("/execute101").handler(context->{
+      final String sql = "UPDATE sys_user SET `password` = #{password} WHERE username = #{username} LIMIT 1";
+      final String username = context.request().getParam("username");
+      final String password = context.request().getParam("password");
+      final Map<String,Object> parameters = new HashMap<>();
+      parameters.put("username",username);
+      parameters.put("password",password);
+      daoHandle.execute(sql,parameters).onSuccess(rows->{
+        //ToolClient.responseJson(context,ToolClient.executeRows(rows,"操作成功","操作失败"));//ok
+        ToolClient.responseJson(context,ToolClient.executeRows(rows));
+      }).onFailure(err->{
+        ToolClient.responseJson(context,ToolClient.createJson(199,"系统出现错误,"+err));
+      });
+    });
+
+    // http://127.0.0.1:808/queryMap11?username=admin
+    router.get("/queryMap11").handler(context->{
+      //final String sql = "SELECT COUNT(kid) total from sys_user where username LIKE CONCAT('%',?,'%') LIMIT 1";
+      final String sql = "SELECT kid,username,`password` from sys_user where username LIKE CONCAT('%',#{username},'%') LIMIT 1";
+      final String username = context.request().getParam("username");
+      final Map<String,Object> parameters = new HashMap<>();
+      parameters.put("username",username);
+      daoHandle.queryMap(sql,parameters).onSuccess(map->{
+        ToolClient.responseJson(context,ToolClient.queryJson(map));
+      }).onFailure(err->{
+        ToolClient.responseJson(context,ToolClient.createJson(199,"系统出现错误,"+err));
+      });
+    });
+
+    // http://127.0.0.1:808/queryList1021?username=t
+    router.get("/queryList1021").handler(context->{
+      //final String sql = "SELECT COUNT(kid) total from sys_user where username LIKE CONCAT('%',?,'%') LIMIT 1";
+      final String sql = "SELECT kid,username,`password` from sys_user where username LIKE CONCAT('%',#{username},'%')";
+      final String username = context.request().getParam("username");
+      final Map<String,Object> parameters = new HashMap<>();
+      parameters.put("username",username);
+      daoHandle.queryList(sql,parameters).onSuccess(list->{
+        ToolClient.responseJson(context,ToolClient.queryJson(list));
+      }).onFailure(err->{
+        ToolClient.responseJson(context,ToolClient.createJson(199,"系统出现错误,"+err));
+      });
     });
 
     // todo 分页 http://127.0.0.1:808/listDataTotal

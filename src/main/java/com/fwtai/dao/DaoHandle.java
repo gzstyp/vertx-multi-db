@@ -111,6 +111,19 @@ public final class DaoHandle{
     return promise.future();
   }
 
+  protected final JsonObject getRowMap(final RowSet<Row> rowSet){
+    final JsonObject jsonObject = new JsonObject();
+    final List<String> columns = rowSet.columnsNames();
+    rowSet.forEach((item) ->{
+      for(int i = 0; i < columns.size();i++){
+        final String column = columns.get(i);
+        jsonObject.put(column,item.getValue(column));
+      }
+    });
+    return jsonObject;
+  }
+
+  //todo 此处的JsonObject不能用上面的方法getRowMap()!!!
   protected final ArrayList<JsonObject> getRowList(final RowSet<Row> rowSet){
     final ArrayList<JsonObject> list = new ArrayList<>();
     final List<String> columns = rowSet.columnsNames();
@@ -143,18 +156,6 @@ public final class DaoHandle{
         });
       }
     });
-  }
-
-  protected final JsonObject getRowMap(final RowSet<Row> rowSet){
-    final JsonObject jsonObject = new JsonObject();
-    final List<String> columns = rowSet.columnsNames();
-    rowSet.forEach((item) ->{
-      for(int i = 0; i < columns.size();i++){
-        final String column = columns.get(i);
-        jsonObject.put(column,item.getValue(column));
-      }
-    });
-    return jsonObject;
   }
 
   public final void queryMap(final String sql,final List<Object> params,final QueryResultMap queryResultMap){
@@ -254,17 +255,37 @@ public final class DaoHandle{
   }
 
   /**
-   * 基于SqlTemplate查询操作,待验证,用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
-   * @param parameters --> SELECT name FROM users WHERE id=#{id}
+   * todo 基于SqlTemplate查询操作,推荐!!!用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
+   * @param sql --> SELECT name FROM users WHERE id=#{id}
+   * @param parameters map.put("id",1024)
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021/6/9 19:59
   */
-  public final Future<RowSet<Row>> templateQuery(final String sql,final Map<String,Object> parameters){
-    final Promise<RowSet<Row>> promise = Promise.promise();
+  public final Future<ArrayList<JsonObject>> queryList(final String sql,final Map<String,Object> parameters){
+    final Promise<ArrayList<JsonObject>> promise = Promise.promise();
     final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(parameters);
-    execute.onSuccess(handler->{
-      promise.complete(execute.result());
+    execute.onSuccess(rows->{
+      promise.complete(getRowList(rows.value()));
+    }).onFailure(err->{
+      promise.fail(err.getCause());
+    });
+    return promise.future();
+  }
+
+  /**
+   * todo 基于SqlTemplate查询操作,推荐
+   * @param sql --> SELECT name FROM users WHERE id=#{id}
+   * @param parameters map.put("id",1024)
+   * @作者 田应平
+   * @QQ 444141300
+   * @创建时间 2021年6月9日 23:15:43
+  */
+  public final Future<JsonObject> queryMap(final String sql,final Map<String,Object> parameters){
+    final Promise<JsonObject> promise = Promise.promise();
+    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(parameters);
+    execute.onSuccess(rows->{
+      promise.complete(getRowMap(rows.value()));
     }).onFailure(err->{
       promise.fail(err.getCause());
     });
@@ -278,7 +299,7 @@ public final class DaoHandle{
    * @QQ 444141300
    * @创建时间 2021/6/9 19:58
   */
-  public final Future<Integer> templateExecute(final String sql,final Map<String,Object> parameters){
+  public final Future<Integer> execute(final String sql,final Map<String,Object> parameters){
     final Promise<Integer> promise = Promise.promise();
     final Future<SqlResult<Void>> execute = SqlTemplate.forUpdate(this.dbWrite.getClient(),sql).execute(parameters);
     execute.onSuccess(handler->{
