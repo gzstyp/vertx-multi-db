@@ -98,6 +98,27 @@ public final class ToolClient{
     }
   }
 
+  /**
+   * 根据行数生成json格式数据
+   * @param rows 受影响的行数
+   * @param succeed 成功时的提示信息
+   * @param failure 失败时的提示信息
+   * @作者 田应平
+   * @QQ 444141300
+   * @创建时间 2021/6/9 22:19
+  */
+  public static String executeRows(final int rows,final String succeed,final String failure){
+    final JsonObject json = new JsonObject();
+    if(rows > 0){
+      json.put(key_code,200);
+      json.put(key_msg,succeed);
+      json.put(key_data,rows);
+      return json.encode();
+    }else{
+      return jsonFailure(failure);
+    }
+  }
+
   public static HttpServerResponse getResponse(final RoutingContext context){
     return context.response().putHeader("Server","vert.x").putHeader("Cache-Control","no-cache").putHeader("content-type","text/html;charset=utf-8");
   }
