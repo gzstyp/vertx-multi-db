@@ -254,7 +254,7 @@ public final class DaoHandle{
   }
 
   /**
-   * 查询操作,待验证
+   * 查询操作,待验证,用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
    * @param parameters --> SELECT name FROM users WHERE id=#{id}
    * @作者 田应平
    * @QQ 444141300

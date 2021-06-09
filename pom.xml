@@ -53,6 +53,7 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-mysql-client</artifactId>
     </dependency>
+    <!--用法：https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started -->
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-sql-client-templates</artifactId>
