@@ -13,9 +13,12 @@ import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.SqlResult;
 import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.templates.SqlTemplate;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -248,5 +251,41 @@ public final class DaoHandle{
     if(limit != null){
       sb.append(" LIMIT ").append(limit);
     }
+  }
+
+  /**
+   * 查询操作,待验证
+   * @param parameters --> SELECT name FROM users WHERE id=#{id}
+   * @作者 田应平
+   * @QQ 444141300
+   * @创建时间 2021/6/9 19:59
+  */
+  public final Future<RowSet<Row>> query(final String sql,final HashMap<String,Object> parameters){
+    final Promise<RowSet<Row>> promise = Promise.promise();
+    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(parameters);
+    execute.onSuccess(handler->{
+      promise.complete(execute.result());
+    }).onFailure(err->{
+      promise.fail(err.getCause());
+    });
+    return promise.future();
+  }
+
+  /**
+   * 新增|更新|删除,待验证
+   * @param parameters --> INSERT INTO users VALUES (#{id},#{name})
+   * @作者 田应平
+   * @QQ 444141300
+   * @创建时间 2021/6/9 19:58
+  */
+  public final Future<Integer> execute(final String sql,final HashMap<String,Object> parameters){
+    final Promise<Integer> promise = Promise.promise();
+    final Future<SqlResult<Void>> execute = SqlTemplate.forUpdate(this.dbWrite.getClient(),sql).execute(parameters);
+    execute.onSuccess(handler->{
+      promise.complete(handler.rowCount());
+    }).onFailure(err->{
+      promise.fail(err.getCause());
+    });
+    return promise.future();
   }
 }
