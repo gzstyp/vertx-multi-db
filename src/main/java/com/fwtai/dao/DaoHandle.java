@@ -41,7 +41,7 @@ public final class DaoHandle{
     this.dbWrite = new DBWrite(vertx);
   }
 
-  public MySQLPool getQuery(){
+  protected final MySQLPool getQuery(){
     final int total = count.getAndAdd(1);
     final int key = total % dbTotal;
     if(key == 0){
