@@ -221,7 +221,7 @@ public final class ToolClient{
   /**分页*/
   public static String listPage(final List<JsonObject> listData,final Integer total){
     final JsonObject json = new JsonObject();
-    if(listData == null || listData.size() == 0){
+    if(listData == null || listData.size() == 0 || total == null || total == 0){
       json.put(key_code,201);
       json.put(key_msg,"暂无数据");
     }else{

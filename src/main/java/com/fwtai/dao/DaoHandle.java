@@ -277,6 +277,23 @@ public final class DaoHandle{
     return promise.future();
   }
 
+  public final Future<Integer> queryInteger(final String sql,final Map<String,Object> params){
+    final Promise<Integer> promise = Promise.promise();
+    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(params);
+    execute.onSuccess(rows->{
+      final JsonObject jsonObject = getRowMap(rows.value());
+      final Set<String> keys = jsonObject.fieldNames();
+      Integer record = null;
+      for(final String key : keys){
+        record = jsonObject.getInteger(key);
+      }
+      promise.complete(record);
+    }).onFailure(err->{
+      promise.fail(err.getCause());
+    });
+    return promise.future();
+  }
+
   /**
    * todo 基于SqlTemplate新增|更新|删除,推荐!
    * @param sql --> INSERT INTO users VALUES (#{id},#{name})
@@ -308,16 +325,31 @@ public final class DaoHandle{
   public final Future<String> listPage(final String sqlListData,final String sqlTotal,final Map<String,Object> params){
     final Promise<String> promise = Promise.promise();
     final Future<ArrayList<JsonObject>> listData = queryList(sqlListData,params);
+    final Future<Integer> total = queryInteger(sqlTotal,params);
+    final CompositeFuture all = CompositeFuture.all(total,listData);
+    all.onSuccess(handler->{
+      final String json = ToolClient.listPage(listData.result(),total.result());
+      promise.complete(json);
+    }).onFailure(err->{
+      promise.fail(err.getCause());
+    });
+    return promise.future();
+  }
+
+  //仅供参考
+  protected final Future<String> listPageTatol(final String sqlListData,final String sqlTotal,final Map<String,Object> params){
+    final Promise<String> promise = Promise.promise();
+    final Future<ArrayList<JsonObject>> listData = queryList(sqlListData,params);
     final Future<JsonObject> total = queryMap(sqlTotal,params);
     final CompositeFuture all = CompositeFuture.all(total,listData);
     all.onSuccess(handler->{
       final List<Object> list = handler.list();
-      List<JsonObject> data = null;
-      Integer record = 0;
+      ArrayList<JsonObject> data = null;
+      Integer record = null;
       for(int i = 0; i < list.size(); i++){
         final Object o = list.get(i);
         if(o instanceof List){
-          data = (List<JsonObject>) o;
+          data = listData.result();
         }
         if(o instanceof JsonObject){
           final JsonObject jsonObject = (JsonObject)o;
