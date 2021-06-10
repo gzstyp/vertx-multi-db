@@ -4,6 +4,7 @@ import com.fwtai.callback.QueryResultMap;
 import com.fwtai.tool.ToolClient;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.Log4JLoggerFactory;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -20,6 +21,7 @@ import io.vertx.sqlclient.templates.SqlTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 //todo 事务: https://vertx-china.gitee.io/docs/vertx-mysql-client/java/#_using_transactions
@@ -49,6 +51,11 @@ public final class DaoHandle{
     }else{
       return this.dbRead1.getClient();
     }
+  }
+
+  /**用于处理事务*/
+  public MySQLPool getClient(){
+    return this.dbWrite.getClient();
   }
 
   //todo 推荐,daoHandle.queryList(context,sql,new ArrayList<Object>(0));若没有参数的话,要创建 new ArrayList<Object>(0) 作为第3个参数
@@ -235,14 +242,14 @@ public final class DaoHandle{
   /**
    * todo 基于SqlTemplate查询操作,推荐!!!用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
    * @param sql --> SELECT name FROM users WHERE id=#{id}
-   * @param parameters map.put("id",1024),若没有参数时传入 new HashMap<>(0)
+   * @param params map.put("id",1024),若没有参数时传入 new HashMap<>(0)
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021/6/9 19:59
   */
-  public final Future<ArrayList<JsonObject>> queryList(final String sql,final Map<String,Object> parameters){
+  public final Future<ArrayList<JsonObject>> queryList(final String sql,final Map<String,Object> params){
     final Promise<ArrayList<JsonObject>> promise = Promise.promise();
-    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(parameters);
+    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(params);
     execute.onSuccess(rows->{
       promise.complete(getRowList(rows.value()));
     }).onFailure(err->{
@@ -254,14 +261,14 @@ public final class DaoHandle{
   /**
    * todo 基于SqlTemplate查询操作,推荐
    * @param sql --> SELECT name FROM users WHERE id=#{id}
-   * @param parameters map.put("id",1024),若没有参数时传入 new HashMap<>(0)
+   * @param params map.put("id",1024),若没有参数时传入 new HashMap<>(0)
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021年6月9日 23:15:43
   */
-  public final Future<JsonObject> queryMap(final String sql,final Map<String,Object> parameters){
+  public final Future<JsonObject> queryMap(final String sql,final Map<String,Object> params){
     final Promise<JsonObject> promise = Promise.promise();
-    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(parameters);
+    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(params);
     execute.onSuccess(rows->{
       promise.complete(getRowMap(rows.value()));
     }).onFailure(err->{
@@ -273,16 +280,55 @@ public final class DaoHandle{
   /**
    * todo 基于SqlTemplate新增|更新|删除,推荐!
    * @param sql --> INSERT INTO users VALUES (#{id},#{name})
-   * @param parameters --> map.put("id",1024);若没有参数时传入 new HashMap<>(0)
+   * @param params --> map.put("id",1024);若没有参数时传入 new HashMap<>(0)
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021/6/9 19:58
   */
-  public final Future<Integer> execute(final String sql,final Map<String,Object> parameters){
+  public final Future<Integer> execute(final String sql,final Map<String,Object> params){
     final Promise<Integer> promise = Promise.promise();
-    final Future<SqlResult<Void>> execute = SqlTemplate.forUpdate(this.dbWrite.getClient(),sql).execute(parameters);
+    final Future<SqlResult<Void>> execute = SqlTemplate.forUpdate(this.dbWrite.getClient(),sql).execute(params);
     execute.onSuccess(handler->{
       promise.complete(handler.rowCount());
+    }).onFailure(err->{
+      promise.fail(err.getCause());
+    });
+    return promise.future();
+  }
+
+  /**
+   * 分页功能
+   * @param sqlListData 查询数据sql
+   * @param sqlTotal 查询总条数sql
+   * @param params 查询的参数
+   * @作者 田应平
+   * @QQ 444141300
+   * @创建时间 2021/6/10 21:07
+  */
+  public final Future<String> listPage(final String sqlListData,final String sqlTotal,final Map<String,Object> params){
+    final Promise<String> promise = Promise.promise();
+    final Future<ArrayList<JsonObject>> listData = queryList(sqlListData,params);
+    final Future<JsonObject> total = queryMap(sqlTotal,params);
+    final CompositeFuture all = CompositeFuture.all(total,listData);
+    all.onSuccess(handler->{
+      final List<Object> list = handler.list();
+      List<JsonObject> data = null;
+      Integer record = 0;
+      for(int i = 0; i < list.size(); i++){
+        final Object o = list.get(i);
+        if(o instanceof List){
+          data = (List<JsonObject>) o;
+        }
+        if(o instanceof JsonObject){
+          final JsonObject jsonObject = (JsonObject)o;
+          final Set<String> keys = jsonObject.fieldNames();
+          for(final String key : keys){
+            record = jsonObject.getInteger(key);
+          }
+        }
+      }
+      final String json = ToolClient.listPage(data,record);
+      promise.complete(json);
     }).onFailure(err->{
       promise.fail(err.getCause());
     });

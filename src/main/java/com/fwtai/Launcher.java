@@ -53,7 +53,7 @@ public class Launcher extends AbstractVerticle {
 
     // http://127.0.0.1:808/queryList
     router.get("/queryList").handler(context->{
-      final String sqlListData = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1,5";
+      final String sqlListData = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 0,5";
       final List<Object> paramsListData = new ArrayList<>(0);
       daoHandle.queryList(context,sqlListData,paramsListData);
     });
@@ -147,7 +147,7 @@ public class Launcher extends AbstractVerticle {
 
     // todo 分页 http://127.0.0.1:808/listDataTotal
     router.get("/listDataTotal").handler(context->{
-      final String sqlListData = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 1,5";
+      final String sqlListData = "SELECT kid,username,`password` from sys_user ORDER BY username DESC LIMIT 0,5";
       final List<Object> paramsListData = new ArrayList<>(0);
       final String sqlTotal = "SELECT COUNT(kid) total from sys_user LIMIT 1";
       final List<Object> paramsTotal = new ArrayList<>(0);
@@ -155,7 +155,7 @@ public class Launcher extends AbstractVerticle {
       final Future<JsonObject> total = daoHandle.queryMap(sqlTotal,paramsTotal);
       final CompositeFuture all = CompositeFuture.all(total,listData);
       all.onSuccess(handler->{
-        System.out.println("两个文件都写入成功");
+        System.out.println("两个都操作成功");
         System.out.println(handler.list());//包含全部数据
         final int size = handler.size();
         final List<Object> list = handler.list();
@@ -183,7 +183,21 @@ public class Launcher extends AbstractVerticle {
         }
         ToolClient.responseJson(context,ToolClient.createJson(199,"系统出现错误"));
       });
+    });
 
+    // todo 分页 http://127.0.0.1:808/listPage?username=ad
+    router.get("/listPage").handler(context->{
+      final String username = context.request().getParam("username");
+      final String sqlListData = "SELECT kid,username,`password` from sys_user where username LIKE CONCAT('%',#{username},'%') ORDER BY username DESC LIMIT 0,5";
+      final String sqlTotal = "SELECT COUNT(kid) total from sys_user where username LIKE CONCAT('%',#{username},'%') LIMIT 1";
+      final HashMap<String,Object> params = new HashMap<>();
+      ToolClient.composeParams(params,"username",username);
+      daoHandle.listPage(sqlListData,sqlTotal,params).onSuccess(json->{
+        ToolClient.responseJson(context,json);
+      }).onFailure(throwable -> {
+        throwable.printStackTrace();
+        ToolClient.responseJson(context,ToolClient.createJson(199,"系统出现错误,"+throwable.getMessage()));
+      });
     });
 
     //第四步,配置Router解析url

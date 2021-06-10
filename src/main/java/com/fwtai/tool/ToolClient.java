@@ -233,4 +233,11 @@ public final class ToolClient{
     }
     return json.encode();
   }
+
+  public static HashMap<String,Object> composeParams(final HashMap<String,Object> params,final String key,final String value){
+    if(value != null && value.length()>0){
+      params.put(key,value);
+    }
+    return params;
+  }
 }
