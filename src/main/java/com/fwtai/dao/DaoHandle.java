@@ -240,6 +240,25 @@ public final class DaoHandle{
   }
 
   /**
+   * 基于SqlTemplate新增|更新|删除,已处理错误时的提示,仅需处理 daoHandle(sql,params,context).onSuccess(json->{});
+   * @param sql --> INSERT INTO users VALUES (#{id},#{name})
+   * @param params --> map.put("id",1024);若没有参数时传入 new HashMap<>(0)
+   * @作者 田应平
+   * @QQ 444141300
+   * @创建时间 2021/6/9 19:58
+  */
+  public final Future<Integer> execute(final String sql,final Map<String,Object> params,final RoutingContext context){
+    final Promise<Integer> promise = Promise.promise();
+    final Future<SqlResult<Void>> execute = SqlTemplate.forUpdate(this.dbWrite.getClient(),sql).execute(params);
+    execute.onSuccess(handler->{
+      promise.complete(handler.rowCount());
+    }).onFailure(err->{
+      failure(context,err);
+    });
+    return promise.future();
+  }
+
+  /**
    * todo 基于SqlTemplate查询操作,推荐!!!用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
    * @param sql --> SELECT name FROM users WHERE id=#{id}
    * @param params map.put("id",1024),若没有参数时传入 new HashMap<>(0)
