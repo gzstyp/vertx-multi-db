@@ -232,32 +232,10 @@ public final class DaoHandle{
     return promise.future();//重点,固定写法
   }
 
-  protected void getSql(final String table,final ArrayList<String> fields,final String where,final String order,final Integer limit){
-    final StringBuilder sb = new StringBuilder("select ");
-    for(int i = 0; i < fields.size(); i++){
-      final String field = fields.get(i);
-      if(sb.length() > 7){
-        sb.append(",").append(field);
-      }else{
-        sb.append(field);
-      }
-    }
-    sb.append(" from ").append(table);
-    if(where != null){
-      sb.append(" where ").append(where);
-    }
-    if(order != null){
-      sb.append(" order by ").append(order);
-    }
-    if(limit != null){
-      sb.append(" LIMIT ").append(limit);
-    }
-  }
-
   /**
    * todo 基于SqlTemplate查询操作,推荐!!!用法 https://vertx.io/docs/vertx-sql-client-templates/java/#_getting_started
    * @param sql --> SELECT name FROM users WHERE id=#{id}
-   * @param parameters map.put("id",1024)
+   * @param parameters map.put("id",1024),若没有参数时传入 new HashMap<>(0)
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021/6/9 19:59
@@ -276,7 +254,7 @@ public final class DaoHandle{
   /**
    * todo 基于SqlTemplate查询操作,推荐
    * @param sql --> SELECT name FROM users WHERE id=#{id}
-   * @param parameters map.put("id",1024)
+   * @param parameters map.put("id",1024),若没有参数时传入 new HashMap<>(0)
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021年6月9日 23:15:43
@@ -294,7 +272,8 @@ public final class DaoHandle{
 
   /**
    * todo 基于SqlTemplate新增|更新|删除,推荐!
-   * @param parameters --> INSERT INTO users VALUES (#{id},#{name})
+   * @param sql --> INSERT INTO users VALUES (#{id},#{name})
+   * @param parameters --> map.put("id",1024);若没有参数时传入 new HashMap<>(0)
    * @作者 田应平
    * @QQ 444141300
    * @创建时间 2021/6/9 19:58
