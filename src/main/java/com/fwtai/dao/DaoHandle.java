@@ -124,7 +124,10 @@ public final class DaoHandle{
     rowSet.forEach((item) ->{
       for(int i = 0; i < columns.size();i++){
         final String column = columns.get(i);
-        jsonObject.put(column,item.getValue(column));
+        final Object value = item.getValue(column);
+        if(value != null){
+          jsonObject.put(column,value);
+        }
       }
     });
     return jsonObject;
@@ -138,7 +141,10 @@ public final class DaoHandle{
       final JsonObject jsonObject = new JsonObject();
       for(int i = 0; i < columns.size(); i++){
         final String column = columns.get(i);
-        jsonObject.put(column,item.getValue(column));
+        final Object value = item.getValue(column);
+        if(value != null){
+          jsonObject.put(column,value);
+        }
       }
       list.add(jsonObject);
     });
