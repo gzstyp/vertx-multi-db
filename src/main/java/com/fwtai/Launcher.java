@@ -243,6 +243,7 @@ public class Launcher extends AbstractVerticle {
     }).failureHandler(context -> {
       ToolClient.responseJson(context,ToolClient.createJson(204,"操作失败,系统出现错误"));
     });
+
     final int port = 808;
     server.requestHandler(router).listen(port,http -> {
       if (http.succeeded()){
