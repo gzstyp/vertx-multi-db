@@ -313,6 +313,24 @@ public final class DaoHandle{
     return promise.future();
   }
 
+  public final Future<String> queryString(final String sql,final Map<String,Object> params){
+    final Promise<String> promise = Promise.promise();
+    final Future<RowSet<Row>> execute = SqlTemplate.forQuery(this.getQuery(),sql).execute(params);
+    execute.onSuccess(rows->{
+      final JsonObject jsonObject = getRowMap(rows.value());
+      final Set<String> keys = jsonObject.fieldNames();
+      String record = null;
+      for(final String key : keys){
+        record = jsonObject.getString(key);
+      }
+      promise.complete(record);
+    }).onFailure(err->{
+      promise.fail(err.getCause());
+      logger.error(err);
+    });
+    return promise.future();
+  }
+
   /**
    * todo 基于SqlTemplate新增|更新|删除,推荐!
    * @param sql --> INSERT INTO users VALUES (#{id},#{name})
