@@ -10,6 +10,7 @@
 
   <description>
     支持多数据源,1写库2读库,数据库轮询负载均衡
+    类型为时间日期时必须转为字符串 DATE_FORMAT(gt.createtime,'%Y-%m-%d %H:%i:%s') createtime
   </description>
 
   <properties>
