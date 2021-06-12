@@ -51,7 +51,11 @@ public final class ToolClient{
   }
 
   public static String jsonError(){
-    return createJson(204,"系统出现错误");
+    return jsonError("系统出现错误");
+  }
+
+  public static String jsonError(final String msg){
+    return createJson(204,msg);
   }
 
   public static String jsonPermission(){
