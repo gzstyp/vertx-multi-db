@@ -53,8 +53,8 @@ public final class DaoHandle{
     }
   }
 
-  /**用于处理事务*/
-  public MySQLPool getClient(){
+  /**用于处理事务的新增,修改,删除*/
+  public MySQLPool getExecute(){
     return this.dbWrite.getClient();
   }
 
